@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+#Author: Mathias Hauser
+#Date: 2014
+
 
 from __future__ import print_function, division
 
@@ -12,16 +15,19 @@ from scipy.special import gamma, beta
 from scipy.optimize import minimize
 from scipy.stats import poisson, rankdata
 
+from collections import OrderedDict
+
 import numdifftools as nd
 
 import matplotlib.pyplot as plt
+from matplotlib.ticker import ScalarFormatter
 
 #------------------------------------------------------------------------------
 
 def Y_of_T(t, LAMBDA = 1):
     t = np.asarray(t)
     sel = t > LAMBDA
-    res = np.empty(shape = t.shape)
+    res = np.empty(shape=t.shape)
     res.fill(np.nan)
     res[sel] = -log(-log(1 - LAMBDA/t[sel]))
 
@@ -77,7 +83,25 @@ def XGEV(ff, alpha, chi, k):
 
     return f(ff, k)
 
-#------------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+
+def RGEV(alpha, chi, k, n):
+    """
+    random distributed number with Generalised Extreme Value 
+    Distribution see e.g. Zwiers and Kharin 1998 
+    chi  : location parameter
+    alpha: scale parameter
+    k    : shape parameter
+    n    : number of samples
+    """
+
+    kthresh = 0.000001
+    rr = np.random.uniform(size=n)
+    return XGEV(rr,alpha,chi,k)
+
+
+# -----------------------------------------------------------------------------
 
 def XGPD(ff, alpha, chi, k):
     # ==================================================================
@@ -308,7 +332,7 @@ def fitGUMBEL_mlik(data, LAMBDA = 1,  ret = [5, 10, 50, 100, 500], **kwargs):
     # INITIAL VALUES OF OPTIMIZATION (taken from L-moments method)
     init_fit = fitGUMBEL_lmom(data, LAMBDA, ret = 2/LAMBDA)
 
-    print(init_fit)
+    # print(init_fit)
 
     init_alpha = init_fit['alpha']
     init_chi = init_fit['chi']
@@ -320,7 +344,7 @@ def fitGUMBEL_mlik(data, LAMBDA = 1,  ret = [5, 10, 50, 100, 500], **kwargs):
 
 
     res = minimize(func, init, method=method,
-        options={'xtol': 1e-10, 'disp': True})
+        options={'xtol': 1e-10, 'disp': False})
 
     if res.success:
         chi, alpha = res.x
@@ -360,7 +384,7 @@ def fitGUMBEL_mlik(data, LAMBDA = 1,  ret = [5, 10, 50, 100, 500], **kwargs):
 
 #------------------------------------------------------------------------------
 
-def fitGPD_mlik(data, LAMBDA = 1, ret = [5, 10, 50, 100, 500], chi = False, **kwargs):
+def fitGPD_mlik(data, LAMBDA=1, ret=[5, 10, 50, 100, 500], chi=False, **kwargs):
     data = check_data(data)
     chi = chi if chi else np.min(data)
     if np.any(data < chi):
@@ -382,10 +406,10 @@ def fitGPD_mlik(data, LAMBDA = 1, ret = [5, 10, 50, 100, 500], chi = False, **kw
 
     func = gpd_lik(data, chi, tim)
 
-    print(func(init))
+    # print(func(init))
 
     res = minimize(func, init, method=method,
-        options={'xtol': 1e-10, 'disp': True})
+        options={'xtol': 1e-10, 'disp': False})
 
     if res.success:
         LAMBDA, alpha, k = res.x
@@ -427,7 +451,7 @@ def fitGPD_mlik(data, LAMBDA = 1, ret = [5, 10, 50, 100, 500], chi = False, **kw
 
 
 #calculates fit to GEV for mlik and pmlik
-def __fitGEV_mlik_gen__(estim_method, data, LAMBDA = 1,  ret = [5, 10, 50, 100, 500], **kwargs):
+def __fitGEV_mlik_gen__(estim_method, data, LAMBDA=1,  ret=[5, 10, 50, 100, 500], **kwargs):
     data = check_data(data)
     #must_be_any_of(fit_method, 'fit_method', ('mlik', 'pmlik'))
     is_mlik = estim_method == 'mlik'
@@ -458,7 +482,7 @@ def __fitGEV_mlik_gen__(estim_method, data, LAMBDA = 1,  ret = [5, 10, 50, 100, 
         func = gev_plik(data)
 
     res = minimize(func, init, method=method,
-        options={'xtol': 1e-10, 'disp': True})
+        options={'xtol': 1e-10, 'disp': False})
 
     if res.success:
         chi, alpha, k = res.x
@@ -477,7 +501,7 @@ def __fitGEV_mlik_gen__(estim_method, data, LAMBDA = 1,  ret = [5, 10, 50, 100, 
     if res.success:
         hess = nd.Hessian(func)(res.x)
         covmat = solve(hess, np.identity(3))
-        print(covmat)
+        # print(covmat)
     else:
         covmat = np.ones([3, 3])*np.nan
 
@@ -499,7 +523,7 @@ def __fitGEV_mlik_gen__(estim_method, data, LAMBDA = 1,  ret = [5, 10, 50, 100, 
 
 #------------------------------------------------------------------------------
 
-def fitGEV_pmlik(data, LAMBDA = 1,  ret = [5, 10, 50, 100, 500], **kwargs):
+def fitGEV_pmlik(data, LAMBDA=1,  ret=(5, 10, 50, 100, 500), **kwargs):
     """
     Estimates parameters of GEV-fit to sample data.
     The estimation is based on maximum likelihood.
@@ -507,43 +531,43 @@ def fitGEV_pmlik(data, LAMBDA = 1,  ret = [5, 10, 50, 100, 500], **kwargs):
     """
 
     #call generic mlik function
-    return __fitGEV_mlik_gen__('pmlik', data, LAMBDA = 1,  ret = [5, 10, 50, 100, 500], **kwargs)
+    return __fitGEV_mlik_gen__('pmlik', data, LAMBDA=1,  ret=ret, **kwargs)
 
 #------------------------------------------------------------------------------
 
-def fitGEV_mlik(data, LAMBDA = 1,  ret = [5, 10, 50, 100, 500], **kwargs):
+def fitGEV_mlik(data, LAMBDA=1, ret=(5, 10, 50, 100, 500), **kwargs):
     """
     Estimates parameters of GEV-fit to sample data.
     The estimation is based on maximum likelihood.
     Also estimates values with a given return period.
     """
     #call generic mlik function
-    return __fitGEV_mlik_gen__('mlik', data, LAMBDA = 1,  ret = [5, 10, 50, 100, 500], **kwargs)
+    return __fitGEV_mlik_gen__('mlik', data, LAMBDA=1,  ret=ret, **kwargs)
 
 #------------------------------------------------------------------------------
 
-def fitGEV_lmom(data, LAMBDA=1., ret = [5, 10, 50, 100, 500]):
+def fitGEV_lmom(data, LAMBDA=1., ret=(5, 10, 50, 100, 500)):
     return  __fit_gen_lmom__('GEV', data, LAMBDA, ret)
 
 #-------------------------------------------------------------------------------
 
-def fitGUMBEL_lmom(data, LAMBDA=1., ret = [5, 10, 50, 100, 500]):
+def fitGUMBEL_lmom(data, LAMBDA=1., ret=(5, 10, 50, 100, 500)):
     return  __fit_gen_lmom__('GUMBEL', data, LAMBDA, ret)
 
 #-------------------------------------------------------------------------------
 
-def fitEXPON_lmom(data, LAMBDA=1., ret = [5, 10, 50, 100, 500], chi = False):
+def fitEXPON_lmom(data, LAMBDA=1., ret=(5, 10, 50, 100, 500), chi=False):
     return  __fit_gen_lmom__('EXPON', data, LAMBDA, ret, chi)
 
 #-------------------------------------------------------------------------------
 
-def fitGPD_lmom(data, LAMBDA=1., ret = [5, 10, 50, 100, 500], chi = False):
+def fitGPD_lmom(data, LAMBDA=1., ret=(5, 10, 50, 100, 500), chi=False):
     return  __fit_gen_lmom__('GPD', data, LAMBDA, ret, chi)
 
 #-------------------------------------------------------------------------------
 
 #generic function for all l-moment fits
-def __fit_gen_lmom__(dist, data, LAMBDA=1., ret = [5, 10, 50, 100, 500], chi = False):
+def __fit_gen_lmom__(dist, data, LAMBDA=1., ret=(5, 10, 50, 100, 500), chi=False):
     data = check_data(data)
     is_GEV = dist == 'GEV'
     is_GUMBEL = dist == 'GUMBEL'
@@ -616,58 +640,266 @@ def __fit_gen_lmom__(dist, data, LAMBDA=1., ret = [5, 10, 50, 100, 500], chi = F
 
 #===============================================================================
 
-def plot_xval(fit, LAMBDA = 1, ax = None, c=None, xlim=[0.05, 400]):
-    if ax is None:
-        ax = plt.gca()
+def plot_xval(fit, ax=None, LAMBDA=1, xlim=(0.2, 400),
+              kwargs_fit=dict(), kwargs_data=dict()):
 
-    data = fit['data']
-    plt.hold(True)
-    plot_xval_fit(fit, ax=ax, c=c, xlim=xlim)
-    plot_xval_data(data, LAMBDA, ax=ax, c=c)
+    plot_xval_fit(fit, ax=ax, xlim=xlim, **kwargs_fit)
+    plot_xval_data(fit, LAMBDA, ax=ax, **kwargs_data)
     
 # -----------------------------------------------------------------------------
 
-def plot_xval_fit(fit, ax = None, c=None, xlim=[0.05, 400]):
-    if ax is None:
-        ax = plt.gca()
-
+def plot_xval_fit(fit, ax=None, xlim=(0.2, 400), **kwargs):
+    
     LAMBDA = fit['LAMBDA']
-    plot_LAMBDA = LAMBDA
+
+
+    ax, plot_LAMBDA, kwargs = __prepare_plot_xval__(ax, LAMBDA, **kwargs)
+    
+
+
     params = (fit['alpha'], fit['chi'], fit['k'])
 
     # T_of_Y expects the log of the return period
-
     xlim = np.log(np.asarray(xlim))
 
     t_fit = np.linspace(xlim[0], xlim[1])
 
-
     y_fit = XGEV(F_of_T(T_of_Y(t_fit, plot_LAMBDA), LAMBDA), *params)
 
-    ax.plot(t_fit, y_fit, c=c, lw=2)
 
-
-    ax.set_xlim(xlim)
-
+    ax.semilogx(np.e**(t_fit), y_fit, basex = 10, **kwargs)
+    
+    # ax.xaxis.set_major_formatter(ScalarFormatter())
 # -----------------------------------------------------------------------------
 
-def plot_xval_data(data, LAMBDA = 1, ax = None, c=None):
-    if ax is None:
-        ax = plt.gca()
+def plot_xval_data(data, LAMBDA=1, ax=None, **kwargs):
+    
+    ax, plot_LAMBDA, kwargs = __prepare_plot_xval__(ax, LAMBDA, **kwargs)
+
+
+    if type(data) is dict:
+        data = data['data']
+
     
     sample_size = len(data)
-    plot_LAMBDA = LAMBDA
 
     #calc plotting points
     dt_rank = rankdata(data)
     dt_freq = dt_rank/(sample_size + 1)
     dt_GUMB = Y_of_T(T_of_F(dt_freq, LAMBDA), plot_LAMBDA)
+    dt_GUMB = np.e**dt_GUMB
 
-    # plt.semilogx((dt_GUMB)**10, data, 'o',  c=c) # , basex = np.e)
-    ax.plot(dt_GUMB, data, 'o', c=c, lw=2)
+    ax.semilogx(dt_GUMB, data, '.', basex=10, **kwargs)
+
+    # ax.xaxis.set_major_formatter(ScalarFormatter())
+
+# -----------------------------------------------------------------------------
+
+def plot_conf_xval(xval_conf, ax=None, xlim=(1.01, 1000), 
+                   probs=(2.5, 97.5), line=False, **kwargs):
+    
+
+    if line and len(probs) != 2:
+        raise ValueError("Need exactly two 'probs' when plotting 'fill_between'")
+
+    LAMBDA = xval_conf['LAMBDA']
+    ax, plot_LAMBDA, color = __prepare_plot_xval__(ax, LAMBDA, **kwargs)
+    
+
+    conf_retv = xval_conf['conf_retv']
+
+    
+    ret = xval_conf['ret']
+
+
+    xmin = np.max([1.00001/LAMBDA, xlim[0], np.min(ret)])
+    xmax = np.min([xlim[1], np.max(ret)])
+
+    xlim = np.asarray([xmin, xmax])
+    
+    plot_x = Y_of_T(xlim, LAMBDA=plot_LAMBDA)
+    plot_x = np.linspace(*plot_x)
+
+    xx = Y_of_T(ret, LAMBDA=plot_LAMBDA)
+
+    av_probs = xval_conf['probs']
+
+    IDX = []
+
+    for i in probs:
+        x = np.nonzero(i == av_probs)[0]
+        if len(x):
+            IDX.append(x[0])
+
+    if not len(IDX):
+        raise ValueError("desired prob not available")
+
+
+
+    if line:
+        kwargs.setdefault('lw', 0.5)
+        for i in IDX:
+        # y = sp.interpolate.interp1d(xx, conf_retv[i, ], kind='cubic', bounds_error=False)(plot_x)
+            y = sp.interpolate.UnivariateSpline(xx, conf_retv[i, ], k=3)(plot_x)
+            ax.semilogx(np.e**plot_x, y, color=color, **kwargs)
+
+    else:
+
+        y1 = sp.interpolate.UnivariateSpline(xx, conf_retv[0, ], k=3)(plot_x)
+        y2 = sp.interpolate.UnivariateSpline(xx, conf_retv[1, ], k=3)(plot_x)
+    
+        # add some options for the plot if not set already
+        kwargs.setdefault('alpha', 0.15)
+        kwargs.setdefault('zorder', -1000)
+        kwargs.setdefault('lw', 0)
+        ax.fill_between(np.e**plot_x, y1, y2, **kwargs)
+
+
+    # ax.xaxis.set_major_formatter(ScalarFormatter())
+
+
+# -----------------------------------------------------------------------------
+
+def __prepare_plot_xval__(ax, LAMBDA, **kwargs):
+
+    # determine axis
+    if ax is None:
+        ax = plt.gca()
+
+    # set format to 1, 10, 100 instead of 10**0, 10**1, 10**2
+    ax.xaxis.set_major_formatter(ScalarFormatter())
+
+    # add LAMBDA as attrubute to the axis
+    if hasattr(ax, 'plot_LAMBDA'):
+        plot_LAMBDA = ax.plot_LAMBDA
+    else:
+        plot_LAMBDA = LAMBDA
+        ax.plot_LAMBDA = LAMBDA
+
+    # search kwargs for 'color' or 'c'
+    color = kwargs.pop('color', None)
+    if color is None:
+        color = 'b'
+
+    kwargs.setdefault('c', color)
+
+
+    return (ax, plot_LAMBDA, kwargs)
+
+
+
+
+# -----------------------------------------------------------------------------
+
+def set_xticks(ax=None, xlim=[0.2, 400]):
+    if ax is None:
+        ax = plt.gca()
+
+    # xmin, xmax = ax.get_xlim()
+
+    p_min = np.ceil(np.log10(xmin))
+    p_max = np.floor(np.log10(xmax))
+
+
+
 
 # =============================================================================
 
+# CONFIDENCE BOUNDS CALCULATION
+
+def conf_bounds_xval(xval, ret=[1.1, 5, 10, 50, 100, 500], probs=[2.5, 97.5],
+        size=500, cal='MLE', profs_out=False):
+
+    if np.isnan(xval['k']):
+        raise ValueError("Confidence Bounds Can not be Calculated") 
+    else:
+        if cal == 'SIM':
+            conf = __conf_bounds_xval_sim__(xval, ret, probs, size=size)
+        elif cal == 'MLE':
+            conf= __conf_bounds_xval_mle__(xval, ret, probs)
+        elif cal == 'LPROF':
+            conf = __conf_bounds_xval_lprof__(xval, ret, probs,
+                profs_out=profs_out)
+        else:
+            raise KeyError('Unknown Method {cal}'.format(cal=cal))
+
+    return conf
+
+# ----------------------------------------------------------------------
+
+def __conf_bounds_xval_sim__(xval, ret, probs, size):
+
+    probs = np.asarray(probs)
+
+    length = len(xval['data'])
+    estim = xval['estim']
+
+    alpha = xval['alpha']
+    chi = xval['chi']
+    k = xval['k']
+    LAMBDA = xval['LAMBDA']
+
+    ret = np.asarray(ret)/LAMBDA
+    kthresh = 0.000001
+
+    est = np.empty(shape=(size, len(ret))) * np.nan
+    # for the simulation results (chi, alpha k)
+    ppp = np.empty(shape=(size, 3)) * np.nan
+
+
+
+    if estim == 'mlik':
+        opt = dict(
+                   method=xval['method'],
+                   maxit = xval['maxit']
+                   )
+    else:
+        opt = dict()
+
+    for i in xrange(size):
+        sim = RGEV(alpha, chi, k, length)
+
+
+        res = fitGEV(sim, LAMBDA=LAMBDA, ret=ret, dist=xval['dist'], 
+            estim=xval['estim'], **opt)
+
+
+        est[i, ] = res['fit']['fitted']
+        ppp[i, ] = res['chi'], res['alpha'], res['k']
+
+
+
+
+    conf = np.percentile(est, probs, axis = 0)
+    conf_paras = np.percentile(ppp, probs, axis=0)
+
+    out = OrderedDict(
+                      conf_retv=conf,
+                      conf_paras=conf_paras,
+                      conf_chi=conf_paras[:,0],
+                      conf_alpha=conf_paras[:,1],
+                      conf_res=conf_paras[:,2],
+                      paras_sim=ppp,
+                      ret=ret,
+                      probs=probs,
+                      LAMBDA=LAMBDA,
+                      est=est,
+                      cal='SIM'
+                      )
+    return out
+
+
+# ----------------------------------------------------------------------
+
+def __conf_bounds_xval_mle__(xval, ret, probs):
+    raise NotImplementedError()
+
+# ----------------------------------------------------------------------
+
+def __conf_bounds_xval_lprof__(xval, ret, probs, profs_out=False):
+    raise NotImplementedError()
+
+# =============================================================================
 
 def must_be_any_of(arg, argname, anyof):
     if arg not in anyof:
@@ -692,8 +924,8 @@ if __name__ == '__main__':
      45.0, 10.7, 10.7, 32.7, 18.8, 21.2, 13.9, 29.1, 9.4, 15.9, 32.2, 22.3,
      17.6, 23.7, 12.7, 14.7, 13.4, 21.6, 18.8, 17.8, 11.2])
 
-    ret = fitGEV_lmom(zuri_hmax)
-    print(ret)
+    res = fitGEV_lmom(zuri_hmax)
+    print(res)
 
     res = fitGEV_mlik(zuri_hmax)
     print(res)
