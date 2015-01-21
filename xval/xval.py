@@ -20,7 +20,7 @@ from collections import OrderedDict
 import numdifftools as nd
 
 import matplotlib.pyplot as plt
-from matplotlib.ticker import ScalarFormatter
+from matplotlib.ticker import ScalarFormatter, LogFormatter
 
 #------------------------------------------------------------------------------
 
@@ -638,7 +638,8 @@ def __fit_gen_lmom__(dist, data, LAMBDA=1., ret=(5, 10, 50, 100, 500), chi=False
 
     return res
 
-#===============================================================================
+# =============================================================================
+
 
 def plot_xval(fit, ax=None, LAMBDA=1, xlim=(0.2, 400),
               kwargs_fit=dict(), kwargs_data=dict()):
@@ -647,6 +648,7 @@ def plot_xval(fit, ax=None, LAMBDA=1, xlim=(0.2, 400),
     plot_xval_data(fit, LAMBDA, ax=ax, **kwargs_data)
     
 # -----------------------------------------------------------------------------
+
 
 def plot_xval_fit(fit, ax=None, xlim=(0.2, 400), **kwargs):
     
@@ -672,6 +674,7 @@ def plot_xval_fit(fit, ax=None, xlim=(0.2, 400), **kwargs):
     # ax.xaxis.set_major_formatter(ScalarFormatter())
 # -----------------------------------------------------------------------------
 
+
 def plot_xval_data(data, LAMBDA=1, ax=None, **kwargs):
     
     ax, plot_LAMBDA, kwargs = __prepare_plot_xval__(ax, LAMBDA, **kwargs)
@@ -694,6 +697,7 @@ def plot_xval_data(data, LAMBDA=1, ax=None, **kwargs):
     # ax.xaxis.set_major_formatter(ScalarFormatter())
 
 # -----------------------------------------------------------------------------
+
 
 def plot_conf_xval(xval_conf, ax=None, xlim=(1.01, 1000), 
                    probs=(2.5, 97.5), line=False, **kwargs):
@@ -753,6 +757,7 @@ def plot_conf_xval(xval_conf, ax=None, xlim=(1.01, 1000),
         kwargs.setdefault('zorder', -1000)
         kwargs.setdefault('lw', 0)
         ax.fill_between(np.e**plot_x, y1, y2, **kwargs)
+        ax.xaxis.set_major_formatter(LogFormatter(base=10))
 
 
     # ax.xaxis.set_major_formatter(ScalarFormatter())
