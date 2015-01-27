@@ -20,7 +20,7 @@ from collections import OrderedDict
 import numdifftools as nd
 
 import matplotlib.pyplot as plt
-from matplotlib.ticker import ScalarFormatter, LogFormatter
+from matplotlib.ticker import ScalarFormatter, LogFormatterMathtext
 
 #------------------------------------------------------------------------------
 
@@ -762,7 +762,7 @@ def plot_conf_xval(xval_conf, ax=None, xlim=(1.01, 1000),
         kwargs.setdefault('zorder', -1000)
         kwargs.setdefault('lw', 0)
         ax.fill_between(np.e ** plot_x, y1, y2, **kwargs)
-        ax.xaxis.set_major_formatter(LogFormatter(base=10))
+        ax.xaxis.set_major_formatter(LogFormatterMathtext())
 
     # ax.xaxis.set_major_formatter(ScalarFormatter())
 
