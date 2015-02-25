@@ -67,13 +67,13 @@ def Y_of_F(f):
 # -----------------------------------------------------------------------------
 
 
-def XGEV(ff, alpha, chi, k):
+def XGEV(ff, chi, alpha, k):
     """
     ==========   =========   ================================
     Argument     Type        Description
     ==========   =========   ================================
-    alpha        float       scale parameter               
     chi          float       location parameter
+    alpha        float       scale parameter               
     k            float       shape parameter
     n            integer     number of samples
     ==========   =========   ================================
@@ -131,7 +131,7 @@ def RGEV(alpha, chi, k, n):
 
     kthresh = 0.000001
     rr = np.random.uniform(size=n)
-    return XGEV(rr, alpha, chi, k)
+    return XGEV(rr, chi, alpha, k)
 
 
 # -----------------------------------------------------------------------------
@@ -398,7 +398,7 @@ def fitGUMBEL_mlik(data, LAMBDA=1,  ret=(5, 10, 50, 100, 500), **kwargs):
     # DETERMINE EXTREME VALUES FOR GIVEN RETURN PERIODS
     if res.success:
         f = F_of_T(LAMBDA, ret)
-        fitted = XGEV(np.asarray(f), alpha, chi, k)
+        fitted = XGEV(np.asarray(f), chi, alpha, k)
     else:
         fitted = np.ones(shape=ret.shape) * np.nan
 
@@ -531,7 +531,7 @@ def __fitGEV_mlik_gen__(estim_method, data, LAMBDA=1,  ret=(5, 10, 50, 100, 500)
     # DETERMINE EXTREME VALUES FOR GIVEN RETURN PERIODS
     if res.success:
         f = F_of_T(LAMBDA, ret)
-        fitted = XGEV(np.asarray(f), alpha, chi, k)
+        fitted = XGEV(np.asarray(f), chi, alpha, k)
     else:
         fitted = np.ones(shape=ret.shape) * np.nan
 
@@ -665,7 +665,7 @@ def __fit_gen_lmom__(dist, data, LAMBDA=1., ret=(5, 10, 50, 100, 500), chi=False
     f = F_of_T(LAMBDA, ret)
 
     if is_GEV or is_GUMBEL:
-        fitted = XGEV(np.asarray(f), alpha, chi, k)
+        fitted = XGEV(np.asarray(f), chi, alpha, k)
     elif is_EXPON or is_GPD:
         fitted = XGPD(np.asarray(f), alpha, chi, k)
 
@@ -694,12 +694,61 @@ def plot_xval(fit, ax=None, LAMBDA=1, xlim=(0.2, 400),
 
 
 def plot_xval_fit(fit, ax=None, xlim=(0.2, 400), **kwargs):
+    """
+    plot GEV given the parameters
+
+    Parameters
+    ----------
+    fit : dict
+        fitted object with fitGEV
+    ax : a matplotlib axes object or None
+       If no ax is given, uses plt.gca() to create a new one.
+    LAMBDA : float
+           transformation
+    xlim : two-element list
+        defines the x limit of the plotted line
+    kwargs : named arguments
+        passed to the semilogx plotting function
+
+    Returns
+    -------
+    line : matplotlib.lines.Line2D object
+
+
+    """
 
     LAMBDA = fit['LAMBDA']
+    params = (fit['chi'], fit['alpha'], fit['k'])
+
+    return plot_xval_params(params, ax=ax, LAMBDA=LAMBDA, xlim=xlim, **kwargs)
+    
+# -----------------------------------------------------------------------------
+
+def plot_xval_params(params, ax=None, LAMBDA=1, xlim=(0.2, 400), **kwargs):
+    """
+    plot GEV given the parameters
+
+    Parameters
+    ----------
+    params : array_like
+           The three parameters of a GEV: alpha, chi, k
+    ax : a matplotlib axes object or None
+       If no ax is given, uses plt.gca() to create a new one.
+    LAMBDA : float
+           transformation
+    xlim : two-element list
+        defines the x limit of the plotted line
+    kwargs : named arguments
+        passed to the semilogx plotting function
+
+    Returns
+    -------
+    line : matplotlib.lines.Line2D object
+
+
+    """
 
     ax, plot_LAMBDA, kwargs = __prepare_plot_xval__(ax, LAMBDA, **kwargs)
-
-    params = (fit['alpha'], fit['chi'], fit['k'])
 
     # T_of_Y expects the log of the return period
     xlim = np.log(np.asarray(xlim))
@@ -708,11 +757,10 @@ def plot_xval_fit(fit, ax=None, xlim=(0.2, 400), **kwargs):
 
     y_fit = XGEV(F_of_T(T_of_Y(t_fit, plot_LAMBDA), LAMBDA), *params)
 
-    ax.semilogx(np.e ** (t_fit), y_fit, basex=10, **kwargs)
+    return ax.semilogx(np.e ** (t_fit), y_fit, basex=10, **kwargs)
 
     # ax.xaxis.set_major_formatter(ScalarFormatter())
 # -----------------------------------------------------------------------------
-
 
 def plot_xval_data(data, LAMBDA=1, ax=None, **kwargs):
 
