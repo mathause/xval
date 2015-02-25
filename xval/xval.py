@@ -68,6 +68,16 @@ def Y_of_F(f):
 
 
 def XGEV(ff, alpha, chi, k):
+    """
+    ==========   =========   ================================
+    Argument     Type        Description
+    ==========   =========   ================================
+    alpha        float       scale parameter               
+    chi          float       location parameter
+    k            float       shape parameter
+    n            integer     number of samples
+    ==========   =========   ================================
+    """
     kthresh = 0.000001
 
     def gumb(f):
@@ -94,12 +104,29 @@ def XGEV(ff, alpha, chi, k):
 
 def RGEV(alpha, chi, k, n):
     """
-    random distributed number with Generalised Extreme Value 
-    Distribution see e.g. Zwiers and Kharin 1998 
-    chi  : location parameter
-    alpha: scale parameter
-    k    : shape parameter
-    n    : number of samples
+    Random distributed number with Generalised Extreme Value Distribution
+
+
+    Parameters
+    ----------
+    alpha : float
+        scale parameter
+    chi : float
+        location parameter
+    k : float
+        shape parameter
+    n : integer
+        number of samples
+
+    Returns
+    -------
+    r : ndarray
+        array containg random samples of the GEV    
+
+    References
+    ----------
+    .. [1] e.g. Zwiers and Kharin 1998
+
     """
 
     kthresh = 0.000001
@@ -110,8 +137,8 @@ def RGEV(alpha, chi, k, n):
 # -----------------------------------------------------------------------------
 
 def XGPD(ff, alpha, chi, k):
-    # ==================================================================
-    # Returns extreme value for a given setting of GPD parameters and
+    """
+    extreme value for a given GPD parameters and
     # the cumulative frequency.
     # Invert cumulative pdf for Generalised Pareto Distribution.
     # Is used for random number generator.
@@ -125,6 +152,7 @@ def XGPD(ff, alpha, chi, k):
     # function is listable in argument ff
     # kthresh defines a threshold for k. if abs(k)<kthresh then the
     # Exponential Distribution is taken.
+    """
 
     kthresh = 0.000001
 
