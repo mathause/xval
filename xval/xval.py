@@ -71,14 +71,15 @@ def XGEV(ff, chi, alpha, k):
     """
     Quantile Function for Generalised Extreme Value Distribution
 
-    ==========   =========   ================================
+    ==========   ==========  ================================
     Argument     Type        Description
-    ==========   =========   ================================
-    ff           array_like  cumulative frequencies for which to calculate the quantiles
+    ==========   ==========  ================================
+    ff           array_like  cumulative frequencies for which 
+                             to calculate the quantiles
     chi          float       location parameter
     alpha        float       scale parameter               
     k            float       shape parameter
-    ==========   =========   ================================
+    ==========   ==========  ================================
     """
     kthresh = 0.000001
 
@@ -820,7 +821,16 @@ def plot_xval_params(params, ax=None, LAMBDA=1, xlim=(0.2, 400), **kwargs):
 # -----------------------------------------------------------------------------
 
 def plot_xval_data(data, LAMBDA=1, ax=None, **kwargs):
+    """
+    Plot Gumbel Diagramm with empirical return times
 
+
+
+
+
+
+
+    """
     ax, plot_LAMBDA, kwargs = __prepare_plot_xval__(ax, LAMBDA, **kwargs)
 
     if type(data) is dict:
@@ -898,6 +908,138 @@ def plot_conf_xval(xval_conf, ax=None, xlim=(1.01, 1000),
         ax.xaxis.set_major_formatter(LogFormatterMathtext())
 
     # ax.xaxis.set_major_formatter(ScalarFormatter())
+
+# -----------------------------------------------------------------------------
+
+def qq_xval(data, fit, ax=None, **kwargs):
+    """
+    Q-Q plot of a sample for the Generalized Extreme Value Distribution.
+ 
+    This function uses a fitted GEV as input
+
+    Parameters
+    ----------
+    data : array_like
+         the data to plot
+    fit : dict
+        Fitted GEV object.
+    ax : Matplotlib AxesSubplot instance, optional
+       If given, this subplot is used to plot in instead of using 
+       plt.gca()
+    kwargs : dict
+           is passed to the plot function
+
+    Returns 
+    -------
+    line : matplotlib.lines.Line2D object
+
+    See Also
+    --------
+    qq_xval
+
+    """
+
+    params = [fit['chi'], fit['alpha'], fit['k']]
+    return qq_xval_params(data, params, ax=None, **kwargs)
+
+# -----------------------------------------------------------------------------
+
+def qq_xval_params(data, params, ax=None, **kwargs):
+    """
+    Q-Q plot of a sample for the Generalized Extreme Value Distribution.
+ 
+    This function uses the parameters as input
+
+    Parameters
+    ----------
+    data : array_like
+         the data to plot
+    params : array_like
+           The three parameters of a GEV: [alpha, chi, k]
+    ax : Matplotlib AxesSubplot instance, optional
+       If given, this subplot is used to plot in instead of using 
+       plt.gca()
+    kwargs : dict
+           is passed to the plot function
+
+    Returns 
+    -------
+    line : matplotlib.lines.Line2D object
+
+    See Also
+    --------
+    qq_xval
+
+    """    
+
+    if ax is None:  
+        ax = plt.gca()
+
+    data = np.asarray(data)
+
+    pp = __ppoints__(data)
+    q_empir = np.sort(data)
+    q_theor = XGEV(pp, *params)
+
+
+
+    ax.set_title("GEV Q-Q Plot")
+    ax.set_xlabel("Theoretical Quantile")
+    ax.set_ylabel("Empirical Quantile")
+
+    return ax.plot(q_theor, q_empir, '.', **kwargs)
+
+# -----------------------------------------------------------------------------
+def __ppoints__(n):
+    """
+    sequence of probability points
+
+    Generates the sequence of probability points
+
+    ..math:: (1:m - a)/(m + (1-a)-a),
+
+    where m is either n, if len(n)==1, or len(n).
+    
+
+    Parameters
+    ----------
+    n : integer or array_like
+        defines the number of points that are returned.
+
+
+    Returns
+    -------
+    pp : 
+
+
+    Notes
+    ----- 
+    In the notation of Coles (2001) the present (chi, alpha, k) 
+    correspond to (mu,sigma,-chi)
+
+    kthresh defines a threshold for k. if abs(k)<kthresh then the
+    Gumbel Distribution is taken.
+
+    References
+    ----------
+    .. [1] Becker, R. A., Chambers, J. M. and Wilks, A. R. (1988) 
+           The New S Language. Wadsworth & Brooks/Cole.
+    .. [2] Blom, G. (1958) Statistical Estimates and Transformed Beta
+           Variables. Wiley
+
+    """
+    if len(n) > 1:
+        n = len(n)
+
+    if n <= 10:
+        a = 3./8.
+    else:
+        a = 1./2.
+
+
+    pp = (np.arange(1, n + 1) - a)/(n + 1 - 2*a)
+
+    return pp
 
 
 # -----------------------------------------------------------------------------
