@@ -69,13 +69,15 @@ def Y_of_F(f):
 
 def XGEV(ff, chi, alpha, k):
     """
+    Quantile Function for Generalised Extreme Value Distribution
+
     ==========   =========   ================================
     Argument     Type        Description
     ==========   =========   ================================
+    ff           array_like  cumulative frequencies for which to calculate the quantiles
     chi          float       location parameter
     alpha        float       scale parameter               
     k            float       shape parameter
-    n            integer     number of samples
     ==========   =========   ================================
     """
     kthresh = 0.000001
@@ -98,6 +100,61 @@ def XGEV(ff, chi, alpha, k):
     f = np.vectorize(gev)
 
     return f(ff, k)
+
+# -----------------------------------------------------------------------------
+
+def FGEV(x, chi, alpha, k):
+    """
+    cumulative pdf for Generalised Extreme Value Distribution
+
+
+    Parameters
+    ----------
+    x : float
+        quantile
+    chi : float
+        location parameter
+    alpha : float
+        scale parameter
+    k : float
+        shape parameter
+
+
+    Notes
+    ----- 
+    In the notation of Coles (2001) the present (chi, alpha, k) 
+    correspond to (mu,sigma,-chi)
+
+    kthresh defines a threshold for k. if abs(k)<kthresh then the
+    Gumbel Distribution is taken.
+
+    References
+    ----------
+    .. [1] e.g. Zwiers and Kharin 1998
+    """
+
+    kthresh = 0.000001
+    x = np.asarray(x)
+    ar = (x - chi)/alpha
+
+    # Gumbel Distribution
+    if abs(k) <= kthresh:
+        res = exp(-exp(-ar))
+    
+    # Weibull Distribution
+    elif k > kthresh:
+        res = np.ones_like(ar)
+        sel = ar < 1./k
+        res[sel] = exp(-(1-k*ar[sel])**(1./k))
+    
+    # Frechet Distribution
+    elif k < kthresh:
+        res = np.zeros_like(ar)
+        sel = ar > 1./k
+        res[sel] = exp(-(1-k*ar[sel])**(1./k))
+
+    return res
+
 
 
 # -----------------------------------------------------------------------------
