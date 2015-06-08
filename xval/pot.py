@@ -76,7 +76,7 @@ def gpd_lik(data, chi=0, tim=False):
         if abs(k) > kthresh:  # gpd
             y = (1 - k * y)
             if np.any(y <= 0) or alpha <= 0:
-                ll_gpd = 10 ** 9
+                ll_gpd = np.inf
             else:
                 ll_gpd = length * \
                     sp.log(alpha) + (1 - 1 / k) * np.sum(sp.log(y))
@@ -98,7 +98,7 @@ def gpd_lik(data, chi=0, tim=False):
          # The formuli are in my notes.
 
         if LAMBDA <= 0:
-            ll_poisson = 10 ** 9
+            ll_poisson = np.inf
         else:
             ll_poisson = -poisson.logpmf(length, LAMBDA * tim)
 

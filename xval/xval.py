@@ -206,7 +206,7 @@ def gev_lik(data):
         if abs(k) > kthresh:
             y = (1 - k * y)
             if np.any(y <= 0) or alpha <= 0:
-                return 10 ** 9
+                return np.inf
             return length * sp.log(alpha) + np.sum(y ** (1 / k)) + np.sum(sp.log(y) * (1 - 1 / k))
         else:
             return length * sp.log(alpha) + np.sum(y) + np.sum(sp.exp(-y))
@@ -268,7 +268,7 @@ def gev_cov_lik(data, cov_chi=None, cov_alpha=None, cov_k=None):
 
         y[sel] = (1 - k[sel] * y[sel])
         if np.any(y[sel] <= 0) or np.any(alpha[sel] <= 0):
-            return 10 ** 9
+            return np.inf
         
         # FRECHET OR WEIBULL
         mlik = np.sum(sp.log(alpha[sel]) + y[sel] ** (1 / k[sel])) + np.sum(sp.log(y[sel]) * (1 - 1 / k[sel]))
@@ -308,11 +308,11 @@ def gev_plik(data):
         if abs(k) > kthresh:
             y = (1 - k * y)
             if np.any(y <= 0) or alpha <= 0 or prior == 0:
-                return 10 ** 9
+                return np.inf
             return length * sp.log(alpha) + np.sum(y ** (1 / k)) + np.sum(sp.log(y) * (1 - 1 / k)) - np.log(prior)
         else:
             if alpha <= 0 or prior == 0:
-                return 10 ** 9
+                return np.inf
             return length * sp.log(alpha) + np.sum(y) + np.sum(sp.exp(-y))
     return gev_lik_internal
 
