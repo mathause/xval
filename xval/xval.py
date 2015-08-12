@@ -42,6 +42,11 @@ def XGEV(ff, chi, alpha, k):
     """
     kthresh = 0.000001
 
+    ff = np.asarray(ff)
+    chi = np.asarray(chi)
+    alpha = np.asarray(alpha)
+    k = np.asarray(k)
+
     def gumb(f):
         return -sp.log(-sp.log(f))
 
@@ -49,17 +54,10 @@ def XGEV(ff, chi, alpha, k):
         return (1. - sp.exp(k * sp.log(-sp.log(f)))) / k
 
     def gev(f, k):
-        res = np.zeros_like(f)
-        sel_f = np.logical_or(f > 1, f < 0)
-        
-        res[sel_f] = np.nan
-
         if abs(k) < kthresh:
             return alpha * gumb(f) + chi
         else:
             return alpha * weib(f, k) + chi
-
-    # f = np.vectorize(gev)
 
     return gev(ff, k)
 
@@ -634,12 +632,6 @@ def plot_xval_data(data, LAMBDA=1, ax=None, **kwargs):
     """
     Plot Gumbel Diagramm with empirical return times
 
-
-
-
-
-
-
     """
     ax, plot_LAMBDA, kwargs = __prepare_plot_xval__(ax, LAMBDA, **kwargs)
 
@@ -660,16 +652,88 @@ def plot_xval_data(data, LAMBDA=1, ax=None, **kwargs):
 
 # -----------------------------------------------------------------------------
 
+def plot_conf_sampled_xval(params, ax=None, LAMBDA=1, xlim=(1.01, 1000),
+                   probs=(2.5, 97.5), line=False, **kwargs):
+    """
+    plot uncertainty of GEV given the sampled parameters
+
+    Parameters
+    ----------
+    params : array_like
+           The three parameters of a GEV: alpha, chi, k
+    ax : a matplotlib axes object or None
+       If no ax is given, uses plt.gca() to create a new one.
+    xlim : two-element list
+        defines the x limit of the plotted line
+    probs : tuple
+        probability for which to plot the uncertainty bounds
+    line : bool
+        if true uses line else fill_between
+    kwargs : named arguments
+        passed to the plot/ fill_between plotting function
+
+    Returns
+    -------
+    handle : handle of the plot/ fill_between object
+
+
+    """
+
+    if not line and len(probs) != 2:
+        msg = "Need exactly two 'probs' when plotting 'fill_between'"
+        raise ValueError(msg)
+
+    ax, plot_LAMBDA, kwargs = __prepare_plot_xval__(ax, LAMBDA, **kwargs) 
+
+
+    xmin = np.amax([1.00001 / LAMBDA, xlim[0]])
+    xmax = xlim[1]
+
+    xlim = np.log(np.asarray([xmin, xmax]))
+
+    t_fit = np.linspace(xlim[0], xlim[1])
+
+    n_samples = params.shape[0]
+    n_plot_points = t_fit.shape[0]
+
+    sampled = np.empty(shape=(n_samples, n_plot_points))
+    
+    ft = F_of_T(T_of_Y(t_fit, plot_LAMBDA), LAMBDA)
+    for i, param in enumerate(params):
+        y_fit = XGEV(ft, *param)
+
+        sampled[i, :] = y_fit
+
+    y = np.percentile(sampled, probs, axis=0)
+
+    if line:
+        kwargs.setdefault('lw', 0.5)
+        y = y.transpose()
+        return ax.semilogx(np.e ** t_fit, y, basex=10, **kwargs)
+    else:
+        y1 = y[0, :]
+        y2 = y[1, :]
+
+        # add some options for the plot if not set already
+        kwargs.setdefault('alpha', 0.15)
+        kwargs.setdefault('zorder', -1000)
+        kwargs.setdefault('lw', 0)
+        ax.set_xscale('log', basex=10)
+        ax.xaxis.set_major_formatter(LogFormatterMathtext())
+        return ax.fill_between(np.e ** t_fit, y1, y2, **kwargs)
+
+# -----------------------------------------------------------------------------
+
 
 def plot_conf_xval(xval_conf, ax=None, xlim=(1.01, 1000),
                    probs=(2.5, 97.5), line=False, **kwargs):
 
-    if line and len(probs) != 2:
+    if not line and len(probs) != 2:
         raise ValueError(
             "Need exactly two 'probs' when plotting 'fill_between'")
 
     LAMBDA = xval_conf['LAMBDA']
-    ax, plot_LAMBDA, color = __prepare_plot_xval__(ax, LAMBDA, **kwargs)
+    ax, plot_LAMBDA, kwargs = __prepare_plot_xval__(ax, LAMBDA, **kwargs)
 
     conf_retv = xval_conf['conf_retv']
 
@@ -703,7 +767,7 @@ def plot_conf_xval(xval_conf, ax=None, xlim=(1.01, 1000),
             # y = sp.interpolate.interp1d(xx, conf_retv[i, ], kind='cubic', bounds_error=False)(plot_x)
             y = sp.interpolate.UnivariateSpline(
                 xx, conf_retv[i, ], k=3)(plot_x)
-            ax.semilogx(np.e ** plot_x, y, color=color, **kwargs)
+            ax.semilogx(np.e ** plot_x, y, **kwargs)
 
     else:
 
@@ -927,7 +991,9 @@ def __ppoints__(n):
 # -----------------------------------------------------------------------------
 
 def __prepare_plot_xval__(ax, LAMBDA, **kwargs):
-
+    """
+    parse plot arguments and ready the axis
+    """
     # determine axis
     if ax is None:
         ax = plt.gca()
@@ -943,11 +1009,8 @@ def __prepare_plot_xval__(ax, LAMBDA, **kwargs):
         ax.plot_LAMBDA = LAMBDA
 
     # search kwargs for 'color' or 'c'
-    color = kwargs.pop('color', None)
-    if color is None:
-        color = 'b'
-
-    kwargs.setdefault('c', color)
+    color = kwargs.pop('c', 'b')
+    kwargs.setdefault('color', color)
 
     return (ax, plot_LAMBDA, kwargs)
 
