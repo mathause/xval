@@ -182,8 +182,7 @@ def fitGPD_mlik(data, LAMBDA=1, ret=(5, 10, 50, 100, 500), chi=False, **kwargs):
 
     # print(func(init))
 
-    res = minimize(func, init, method=method,
-                   options={'xtol': 1e-10, 'disp': False})
+    res = minimize(func, init, method=method, options={'xtol': 1e-10, 'disp': False})
 
     if res.success:
         LAMBDA, alpha, k = res.x

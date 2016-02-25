@@ -882,25 +882,55 @@ def qq_xval_params(data, chi, alpha, k, ax=None, **kwargs):
     ax.set_xlabel("Theoretical Quantile")
     ax.set_ylabel("Empirical Quantile")
     
+    # make sure points are above 1:1 line
+    kwargs['zorder'] = kwargs.pop('zorder', 3)
+
     h = ax.plot(q_theor, q_empir, '.', **kwargs)
 
     ax.set_aspect('equal', adjustable='box')
 
     # 1 on 1 line
     xlim = ax.get_xlim()
-    print(xlim)
+
     ax.plot([xlim[0], xlim[1]], [xlim[0], xlim[1]], 'k')
 
     # display r^2
     r, __ = pearsonr(q_theor, q_empir)
-    posx = xlim[0] + 0.95 * (xlim[1] - xlim[0])
-    posy = xlim[0] + 0.01 * (xlim[1] - xlim[0])
-    ax.text(posx, posy, "$R^2=%1.4f$" % r**2, ha='right')
+    posx = 0.95 # xlim[0] + 0.95 * (xlim[1] - xlim[0])
+    posy = 0.02 # xlim[0] + 0.01 * (xlim[1] - xlim[0])
+    # ax.text(posx, posy, "$R^2=%1.4f$" % r**2, ha='right', transform=ax.transAxes)
 
 
     return h 
 
 # -----------------------------------------------------------------------------
+
+def return_time(value, chi, alpha, k):
+    """
+    return time of a value for a given parameter set
+
+    Parameters
+    ----------
+    value : ndarray
+        value to calculate the return time for
+    chi : float
+        location parameter
+    alpha : float
+        scale parameter
+    k : float
+        shape parameter
+
+    Returns
+    -------
+    return_time : ndarray
+        return time of value
+
+    """
+    cdf = FGEV(value, chi, alpha, k)
+    return 1./(1. - cdf)
+
+# -----------------------------------------------------------------------------
+
 
 def GEV_standardize(data, chi, alpha, k):
     """
